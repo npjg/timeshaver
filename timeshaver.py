@@ -7,8 +7,6 @@ import pandas as pd
 import numpy as np
 from enum import Enum
 
-***REMOVED***
-
 
 class AdpError(Exception):
     """Base exception for all TimeSaver exceptions.
@@ -40,11 +38,17 @@ class Periods(Enum):
 
     
 class TimeSaver:
-    def __init__(self):
+    def __init__(self, version, key):
         # Create a headless browser
         options = Options()
         self.driver = webdriver.Firefox(options=options)
-        self.driver.get(TIMESAVER_FRONTPAGE)
+        self.service = ["https://timesaver.adphc.com",
+                        version,
+                        key,
+                        'TS',
+                        'login.php']
+                             
+        self.driver.get(self.base_url)
         self.credentials = None
         self._sites = None
         self._timetable = None
@@ -55,6 +59,10 @@ class TimeSaver:
         # Delete the headless browser
         self.driver.close()
 
+    @property
+    def base_url(self):
+        return  '/'.join(self.service)
+                             
     def authenticate(self):
         """Login to TimeSaver with the provided credentials."""
         uid_field = self.driver.find_element_by_id("username")
