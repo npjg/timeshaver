@@ -74,6 +74,20 @@ class TimeSaver:
         """Submit a new punch."""
         self.driver.find_element_by_id("bttAddPunch").click()
 
+    def change_password(self, new_passwd):
+        """Submit a password-change request."""
+        self.driver.find_element_by_id("bttChangePassword").click()
+        
+        old_field = self.driver.find_element_by_id("FRMOldPassword")
+        new_field = self.driver.find_element_by_id("FRMNewPassword")
+        confirm_field = self.driver.find_element_by_id("FRMConfirmPassword")
+
+        old_field.send_keys(self.credentials.passwd)
+        new_field.send_keys(new_passwd)
+        confirm_field.send_keys(new_passwd)
+
+        self.driver.find_element_by_id("bttOk").click()
+
     @property
     def last_login(self):
         """Get the last successgul login time."""
