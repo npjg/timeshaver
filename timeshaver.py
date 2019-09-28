@@ -69,22 +69,25 @@ or return an empty string if no approval status can be found."""
         return info.text
 
     @property
+    def sites(self):
+        if self._sites is None:
+            self._sites = Select(self.driver.find_element_by_id("FRMTimestampSite"))
+        return self._sites
+
+    @property
     def site(self):
         """Return the currently selected work site."""
-        info = Select(self.driver.find_element_by_id("FRMTimestampSite"))
-        return info.all_selected_options[0].text
+        return self.sites.all_selected_options[0].text
 
     @site.setter
     def site(self, idx):
         """Select a work site by index."""
-        info = Select(self.driver.find_element_by_id("FRMTimestampSite"))
-        info.select_by_index(idx)
+        self.sites.select_by_index(idx)
 
     @property
-    def sites(self):
+    def sites_text(self):
         """Describe all available work sites."""
-        info = Select(self.driver.find_element_by_id("FRMTimestampSite"))
-        return [option.text for option in info.options]
+        return [option.text for option in self.sites.options]
 
     def is_authenticated(self):
         """Check that we have successfully authenticated."""
