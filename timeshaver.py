@@ -182,7 +182,7 @@ or return an empty string if no approval status can be found."""
     def periods(self):
         if self._periods is None:
             self._periods = Select(self.driver.find_element_by_id("FRMTimePeriod"))
-        return self.periods
+        return self._periods
 
     @property
     def period(self):
@@ -190,12 +190,12 @@ or return an empty string if no approval status can be found."""
         return self.periods.all_selected_options[0].text
 
     @period.setter
-    def site(self, *args):
+    def period(self, *args):
         """Set the requested time period."""
         custom_fields = ["FRMFrom", "FRMTo"]
         
         if len(args) == 1:
-            self.periods.select_by_visible_text(arg[0].value)
+            self.periods.select_by_visible_text(args[0].value)
         elif len(args) == len(custom_fields):
             self.periods.select_by_visible_text(Periods.Custom.value)
             for i in len(custom_fields):
