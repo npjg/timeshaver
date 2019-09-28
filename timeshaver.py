@@ -59,6 +59,10 @@ class TimeSaver:
         """Log out of TimeSaver."""
         self.driver.find_element_by_id("logoffLinkImage").click()
 
+    def punch(self):
+        """Submit a new punch."""
+        self.driver.find_element_by_id("bttAddPunch").click()
+
     @property
     def last_login(self):
         """Get the last successgul login time."""
