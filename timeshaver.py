@@ -117,6 +117,23 @@ or return an empty string if no approval status can be found."""
             self._timetable = pd.DataFrame(data=data, columns=columns)
 
         return self._timetable
+
+    @property
+    def totals(self):
+        """Return the total hours worked in the current period."""
+        if self._totals is None:
+            totals = self.driver.find_element_by_xpath(
+                "//*[@id='TimeEntriesTotalTable']/tbody/tr[@id='trTotalWorked']"
+            )
+            
+            self._totals = {
+                "totalHours": totals.find_element_by_xpath("td[2]/p/span").text,
+                "hourPayCodeTotal": totals.find_element_by_xpath("td[4]/p/span").text,
+                "dollarPayCodeTotal": totals.find_element_by_xpath("td[6]/p/span").text,
+                "projectTotal": totals.find_element_by_xpath("td[8]/p/span").text
+            }
+
+        return self._totals
             
     def is_authenticated(self):
         """Check that we have successfully authenticated."""
