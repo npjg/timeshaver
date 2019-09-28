@@ -39,23 +39,23 @@ class TimeSaver():
 
     @credentials.setter
     def credentials(uid, passwd):
-        self.cred['uid'] = uid
-        self.cred['passwd'] = passwd
+        self.cred = Credentials(uid, passwd)
 
     def authenticate(self):
         """Login to TimeSaver with the provided credentials."""
         uid_field = self.driver.find_element_by_id("username")
         passwd_field = self.driver.find_element_by_id("password")
 
-        uid_field.send_keys(self.cred['uid'])
-        passwd_field.send_keys(self.cred['passwd'])
+        uid_field.send_keys(self.cred.uid)
+        passwd_field.send_keys(self.cred.passwd)
 
         self.driver.find_element_by_id("bttSubmit").click()
         if not self.is_authenticated():
             raise AuthenticationError
 
     def is_authenticated(self):
-        """Check that we have successfully logged in."""
+        """Check that we have successfully authenticated."""
+        raise NotImplementedError
         raise NotImplementedError
 
     
