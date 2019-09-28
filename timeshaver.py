@@ -51,6 +51,10 @@ class TimeSaver:
         if not self.is_authenticated():
             raise AuthenticationError
 
+    def logoff(self):
+        """Log out of TimeSaver."""
+        self.driver.find_element_by_id("logoffLinkImage").click()
+
     def is_authenticated(self):
         """Check that we have successfully authenticated."""
         raise NotImplementedError
