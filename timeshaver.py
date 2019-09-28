@@ -1,6 +1,7 @@
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.support.select import Select
 from dataclasses import dataclass
 import pandas as pd
 import numpy as np
