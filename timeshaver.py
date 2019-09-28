@@ -57,7 +57,11 @@ class TimeSaver:
 
     def is_authenticated(self):
         """Check that we have successfully authenticated."""
-        raise NotImplementedError
+        try:
+            header = self.driver.find_elements_by_css_selector("ADPUI-HeaderTitle")
+        except:
+            raise AuthenticationError
+
         raise NotImplementedError
 
     
