@@ -2,6 +2,8 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.firefox.options import Options
 from dataclasses import dataclass
+import pandas as pd
+import numpy as np
 
 ***REMOVED***
 
@@ -34,6 +36,8 @@ class TimeSaver:
         self.driver = webdriver.Firefox(options=options)
         self.driver.get(TIMESAVER_FRONTPAGE)
         self.credentials = None
+        self._sites = None
+        self._timetable = None
 
     def __del__(self):
         # Delete the headless browser
@@ -89,6 +93,31 @@ or return an empty string if no approval status can be found."""
         """Describe all available work sites."""
         return [option.text for option in self.sites.options]
 
+
+    @property
+    def timetable(self):
+        if self._timetable is None:
+            self.driver.find_element_by_id("anchorFolderTabs2").click()
+            raw = self.driver.find_elements_by_xpath("//*[contains(@id, 'TimeEntriesRepeater')]")
+            header = self.driver.find_elements_by_xpath("//*[@id='TimeEntriesHeader']/tr/th")
+            
+            columns = [
+                column.text
+                for column in header
+            ]
+
+            data = np.array([
+                punch for punch in
+                  [[element.text
+                   for element in row.find_elements_by_xpath('td')]
+                for row in raw]
+                 if punch
+            ])
+
+            self._timetable = pd.DataFrame(data=data, columns=columns)
+
+        return self._timetable
+            
     def is_authenticated(self):
         """Check that we have successfully authenticated."""
         try:
