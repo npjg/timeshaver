@@ -55,6 +55,12 @@ class TimeSaver:
         """Log out of TimeSaver."""
         self.driver.find_element_by_id("logoffLinkImage").click()
 
+    @property
+    def last_login(self):
+        """Get the last successgul login time."""
+        info = self.driver.find_element_by_xpath("//*[contains(text(), 'Last successful login')]")
+        return info.text
+
     def is_authenticated(self):
         """Check that we have successfully authenticated."""
         try:
