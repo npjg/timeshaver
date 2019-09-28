@@ -61,6 +61,13 @@ class TimeSaver:
         info = self.driver.find_element_by_xpath("//*[contains(text(), 'Last successful login')]")
         return info.text
 
+    @property
+    def approval_status(self):
+        """Get approval status for the current period,
+or return an empty string if no approval status can be found."""
+        info = self.driver.find_element_by_id("spanTimePeriodApprovalStatus")
+        return info.text
+
     def is_authenticated(self):
         """Check that we have successfully authenticated."""
         try:
