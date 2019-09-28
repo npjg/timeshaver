@@ -136,8 +136,13 @@ or return an empty string if no approval status can be found."""
     def timetable(self):
         if self._timetable is None:
             self.driver.find_element_by_id("anchorFolderTabs2").click()
-            raw = self.driver.find_elements_by_xpath("//*[contains(@id, 'TimeEntriesRepeater')]")
-            header = self.driver.find_elements_by_xpath("//*[@id='TimeEntriesHeader']/tr/th")
+            raw = self.driver.find_elements_by_xpath(
+                "//*[contains(@id, 'TimeEntriesRepeater')]"
+            )
+            
+            header = self.driver.find_elements_by_xpath(
+                "//*[@id='TimeEntriesHeader']/tr/th"
+            )
             
             columns = [
                 column.text
