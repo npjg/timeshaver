@@ -4,6 +4,7 @@ from selenium.webdriver.firefox.options import Options
 from dataclasses import dataclass
 import pandas as pd
 import numpy as np
+from enum import Enum
 
 ***REMOVED***
 
@@ -29,6 +30,14 @@ class Credentials:
     uid: str
     passwd: str
     
+
+class Periods(Enum):
+    Current = "Current Period"
+    Previous = "Previous Period"
+    Next = "Next Period"
+    Custom = "Date Range"
+
+    
 class TimeSaver:
     def __init__(self):
         # Create a headless browser
@@ -38,6 +47,8 @@ class TimeSaver:
         self.credentials = None
         self._sites = None
         self._timetable = None
+        self._totals = None
+        self._periods = None
 
     def __del__(self):
         # Delete the headless browser
@@ -138,6 +149,33 @@ or return an empty string if no approval status can be found."""
             }
 
         return self._totals
+
+    @property
+    def periods(self):
+        if self._periods is None:
+            self._periods = Select(self.driver.find_element_by_id("FRMTimePeriod"))
+        return self.periods
+
+    @property
+    def period(self):
+        """Return the currently selected pay period."""
+        return self.periods.all_selected_options[0].text
+
+    @period.setter
+    def site(self, *args):
+        """Set the requested time period."""
+        custom_fields = ["FRMFrom", "FRMTo"]
+        
+        if len(args) == 1:
+            self.periods.select_by_visible_text(arg[0].value)
+        elif len(args) == len(custom_fields):
+            self.periods.select_by_visible_text(Periods.Custom.value)
+            for i in len(custom_fields):
+                field = self.driver.find_element_by_id(custom_fields[i])
+            field.clear()
+            field.send_keys(args[i].strftime("%x"))
+        else:
+            raise TypeError
             
     def is_authenticated(self):
         """Check that we have successfully authenticated."""
