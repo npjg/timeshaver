@@ -68,11 +68,19 @@ or return an empty string if no approval status can be found."""
         info = self.driver.find_element_by_id("spanTimePeriodApprovalStatus")
         return info.text
 
+    
+
     @property
     def site(self):
         """Return the currently selected work site."""
         info = Select(self.driver.find_element_by_id("FRMTimestampSite"))
         return info.all_selected_options[0].text
+
+    @property
+    def sites(self):
+        """Describe all available work sites."""
+        info = Select(self.driver.find_element_by_id("FRMTimestampSite"))
+        return [option.text for option in info.options]
 
     def is_authenticated(self):
         """Check that we have successfully authenticated."""
