@@ -197,20 +197,22 @@ or return an empty string if no approval status can be found."""
         return self.periods.all_selected_options[0].text
 
     @period.setter
-    def period(self, *args):
+    def period(self, args):
         """Set the requested time period."""
-        custom_fields = ["FRMFrom", "FRMTo"]
-        
-        if len(args) == 1:
-            self.periods.select_by_visible_text(args[0].value)
-        elif len(args) == len(custom_fields):
+        fields = ["FRMFrom", "FRMTo"]
+
+        if isinstance(args, list):
+            # We have a date range.
             self.periods.select_by_visible_text(Periods.Custom.value)
-            for i in len(custom_fields):
-                field = self.driver.find_element_by_id(custom_fields[i])
-            field.clear()
-            field.send_keys(args[i].strftime("%x"))
+            dates = [arg.strftime("%x") for arg in args]
+            self.map_input(zip(fields, dates))
+
+            self.driver.find_element_by_id("bttRefresh").click()
         else:
-            raise TypeError
+            # We have a single element.
+            self.periods.select_by_visible_text(args.value)
+
+        self._timetable = None
             
     def is_authenticated(self):
         """Check that we have successfully authenticated."""
