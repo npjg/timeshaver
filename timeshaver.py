@@ -66,11 +66,12 @@ class TimeSaver:
                              
     def authenticate(self):
         """Login to TimeSaver with the provided credentials."""
-        uid_field = self.driver.find_element_by_id("username")
-        passwd_field = self.driver.find_element_by_id("password")
-
-        uid_field.send_keys(self.credentials.uid)
-        passwd_field.send_keys(self.credentials.passwd)
+        elements = [
+            ("username", self.credentials.uid),
+            ("password", self.credentials.passwd)
+        ]
+        
+        self.map_input(elements)
 
         self.driver.find_element_by_id("bttSubmit").click()
         if not self.is_authenticated():
@@ -87,16 +88,21 @@ class TimeSaver:
     def change_password(self, new_passwd):
         """Submit a password-change request."""
         self.driver.find_element_by_id("bttChangePassword").click()
+
+        elements = [
+            ("FRMOldPassword", self.credentials.passwd),
+            ("FRMNewPassword", new_passwd),
+            ("FRMConfirmPassword", new_passwd)
+        ]
         
-        old_field = self.driver.find_element_by_id("FRMOldPassword")
-        new_field = self.driver.find_element_by_id("FRMNewPassword")
-        confirm_field = self.driver.find_element_by_id("FRMConfirmPassword")
-
-        old_field.send_keys(self.credentials.passwd)
-        new_field.send_keys(new_passwd)
-        confirm_field.send_keys(new_passwd)
-
+        self.map_input(elements)
         self.driver.find_element_by_id("bttOk").click()
+
+    def map_input(self, rules):
+        for rule in rules:
+            element = self.driver.find_element_by_id(rule[0])
+            element.clear()
+            element.send_keys(rule[1])
 
     @property
     def last_login(self):
