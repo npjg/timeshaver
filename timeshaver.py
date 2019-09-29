@@ -150,21 +150,23 @@ or return an empty string if no approval status can be found."""
             header = self.driver.find_elements_by_xpath(
                 "//*[@id='TimeEntriesHeader']/tr/th"
             )
-            
+ 
             columns = [
                 column.text
                 for column in header
             ]
 
-            data = np.array([
-                punch for punch in
-                  [[element.text
-                   for element in row.find_elements_by_xpath('td')]
-                for row in raw]
-                 if punch
-            ])
-
-            self._timetable = pd.DataFrame(data=data, columns=columns)
+            if raw:
+                data = np.array([
+                    punch for punch in
+                      [[element.text
+                       for element in row.find_elements_by_xpath('td')]
+                    for row in raw]
+                     if punch
+                ])
+                self._timetable = pd.DataFrame(data=data, columns=columns)
+            else:
+                self._timetable = pd.DataFrame()
 
         return self._timetable
 
