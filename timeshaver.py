@@ -56,7 +56,8 @@ class TimeSaver:
         self._periods = None
 
     def __del__(self):
-        # Delete the headless browser
+        # Log off safely and delete the headless browser
+        self.logoff()
         self.driver.close()
 
     @property
