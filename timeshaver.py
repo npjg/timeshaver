@@ -84,6 +84,7 @@ class TimeSaver:
     def punch(self):
         """Submit a new punch."""
         self.driver.find_element_by_id("bttAddPunch").click()
+        self.driver.find_element_by_id("FloatMsgBtn0").click()
 
     def change_password(self, new_passwd):
         """Submit a password-change request."""
