@@ -55,6 +55,7 @@ class TimeSaver:
         self._timetable = None
         self._totals = None
         self._periods = None
+        self._jobcodes = None
 
     def __del__(self):
         # Log off safely and delete the headless browser
@@ -142,6 +143,36 @@ or return an empty string if no approval status can be found."""
         """Describe all available work sites."""
         return [option.text for option in self.sites.options]
 
+    @property
+    def jobcodes(self):
+        "Describe all available job codes."
+        if self._jobcodes is None:
+            raw = self.driver.find_elements_by_xpath(
+                "//*[contains(@id, 'tr_FRMTimestampDeptPosCombo')]"
+            )
+
+            header = self.driver.find_elements_by_xpath(
+                "//*[@id='trMultiColumnTitles_FRMTimestampDeptPosCombo']/th/p"
+            )
+
+            columns = [
+                column.get_attribute("textContent").strip()
+                for column in header
+            ]
+
+            if raw:
+                data = np.array([
+                    code for code in
+                    [[element.get_attribute("textContent").strip()
+                      for element in row.find_elements_by_xpath('td/p')]
+                     for row in raw]
+                    if code
+                ])
+                self._jobcodes = pd.DataFrame(data=data, columns=columns)
+            else:
+                self._jobcodes = pd.DataFrame()
+
+        return self._jobcodes
 
     @property
     def timetable(self):
