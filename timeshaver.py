@@ -18,8 +18,8 @@ class AdpError(Exception):
     def __init__(self, message=None):
         self.message = message or self.message
         super().__init__(self.message)
-        
-    
+
+
 class AuthenticationError(AdpError):
     """Exception raised when an unauthorized access attempt has been made."""
     message = "The user attempted an unauthorized access to a resource."
@@ -29,7 +29,7 @@ class AuthenticationError(AdpError):
 class Credentials:
     uid: str
     passwd: str
-    
+
 
 class Periods(Enum):
     Current = "Current Period"
@@ -37,7 +37,7 @@ class Periods(Enum):
     Next = "Next Period"
     Custom = "Date Range"
 
-    
+
 class TimeSaver:
     def __init__(self, version, key):
         # Create a headless browser
@@ -48,7 +48,7 @@ class TimeSaver:
                         key,
                         'TS',
                         'login.php']
-                             
+
         self.driver.get(self.base_url)
         self.credentials = None
         self._sites = None
@@ -66,14 +66,14 @@ class TimeSaver:
     @property
     def base_url(self):
         return  '/'.join(self.service)
-                             
+
     def authenticate(self):
         """Login to TimeSaver with the provided credentials."""
         elements = [
             ("username", self.credentials.uid),
             ("password", self.credentials.passwd)
         ]
-        
+
         self.map_input(elements)
 
         self.driver.find_element_by_id("bttSubmit").click()
@@ -99,7 +99,7 @@ class TimeSaver:
             ("FRMNewPassword", new_passwd),
             ("FRMConfirmPassword", new_passwd)
         ]
-        
+
         self.map_input(elements)
         self.driver.find_element_by_id("bttOk").click()
 
@@ -202,11 +202,11 @@ or return an empty string if no approval status can be found."""
             raw = self.driver.find_elements_by_xpath(
                 "//*[contains(@id, 'TimeEntriesRepeater')]"
             )
-            
+
             header = self.driver.find_elements_by_xpath(
                 "//*[@id='TimeEntriesHeader']/tr/th"
             )
- 
+
             columns = [
                 column.text
                 for column in header
@@ -234,7 +234,7 @@ or return an empty string if no approval status can be found."""
             totals = self.driver.find_element_by_xpath(
                 "//*[@id='TimeEntriesTotalTable']/tbody/tr[@id='trTotalWorked']"
             )
-            
+
             self._totals = {
                 "totalHours": totals.find_element_by_xpath("td[2]/p/span").text,
                 "hourPayCodeTotal": totals.find_element_by_xpath("td[4]/p/span").text,
@@ -272,7 +272,7 @@ or return an empty string if no approval status can be found."""
             self.periods.select_by_visible_text(args.value)
 
         self._timetable = None
-            
+
     def is_authenticated(self):
         """Check that we have successfully authenticated."""
         try:
