@@ -52,6 +52,7 @@ class TimeSaver:
         self.driver.get(self.base_url)
         self.credentials = None
         self._sites = None
+        self._sites_selector = None
         self._timetable = None
         self._totals = None
         self._periods = None
@@ -122,26 +123,32 @@ or return an empty string if no approval status can be found."""
         return info.text
 
     @property
+    def sites_selector(self):
+        if self._sites_selector is None:
+            # self.driver.find_element_by_id("anchorFolderTabs1").click()
+            self._sites_selector = Select(self.driver.find_element_by_id("FRMTimestampSite"))
+
+        return self._sites_selector
+
+    @property
     def sites(self):
+        """Describe all available work sites in an indexed list."""
         if self._sites is None:
-            self.driver.find_element_by_id("anchorFolderTabs1").click()
-            self._sites = Select(self.driver.find_element_by_id("FRMTimestampSite"))
+            self._sites = [option.get_attribute("textContent")
+                           for option in self.sites_selector.options]
+
         return self._sites
 
     @property
     def site(self):
         """Return the currently selected work site."""
-        return self.sites.all_selected_options[0].text
+        return self.sites_selector.all_selected_options[0].text
 
     @site.setter
     def site(self, idx):
         """Select a work site by index."""
-        self.sites.select_by_index(idx)
-
-    @property
-    def sites_text(self):
-        """Describe all available work sites."""
-        return [option.text for option in self.sites.options]
+        sites = Select(self.driver.find_element_by_id("FRMTimestampSite"))
+        sites.select_by_index(idx)
 
     @property
     def jobcodes(self):
