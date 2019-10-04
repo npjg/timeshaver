@@ -68,6 +68,37 @@ class TimeSaver:
     def base_url(self):
         return  '/'.join(self.service)
 
+    def make_dataframe_from_html(self, table, row_xpath, header):
+        """Makes a pandas dataframe from a Selenium HTML object TABLE, with rows
+        referenced by ROW_XPATH and columns provided by a list in COLUMNS. If
+        TABLE is empty, return an empty DataFrame.
+        """
+
+        columns = [
+            column.get_attribute("textContent").strip() for column in header 
+        ]
+
+        if table:
+            data = np.array([
+                nonnull for nonnull in
+                [[atom.get_attribute("textContent").strip()
+                  for atom in row.find_elements_by_xpath(row_xpath)]
+                 for row in table]
+                if nonnull
+            ])
+
+            dataframe = pd.DataFrame(data=data, columns=columns)
+        else:
+            dataframe = pd.DataFrame()
+
+        return dataframe
+
+    def map_input(self, rules):
+        for rule in rules:
+            element = self.driver.find_element_by_id(rule[0])
+            element.clear()
+            element.send_keys(rule[1])
+
     def authenticate(self):
         """Login to TimeSaver with the provided credentials."""
         elements = [
@@ -124,12 +155,6 @@ class TimeSaver:
         self.map_input(elements)
         self.driver.find_element_by_id("bttOk").click()
 
-    def map_input(self, rules):
-        for rule in rules:
-            element = self.driver.find_element_by_id(rule[0])
-            element.clear()
-            element.send_keys(rule[1])
-
     @property
     def last_login(self):
         """Get the last successgul login time."""
@@ -171,30 +196,6 @@ or return an empty string if no approval status can be found."""
         sites = Select(self.driver.find_element_by_id("FRMTimestampSite"))
         sites.select_by_index(idx)
 
-    def make_dataframe_from_html(self, table, row_xpath, header):
-        """Makes a pandas dataframe from a Selenium HTML object TABLE, with rows
-        referenced by ROW_XPATH and columns provided by a list in COLUMNS. If
-        TABLE is empty, return an empty DataFrame.
-        """
-
-        columns = [
-            column.get_attribute("textContent").strip() for column in header 
-        ]
-
-        if table:
-            data = np.array([
-                nonnull for nonnull in
-                [[atom.get_attribute("textContent").strip()
-                  for atom in row.find_elements_by_xpath(row_xpath)]
-                 for row in table]
-                if nonnull
-            ])
-
-            dataframe = pd.DataFrame(data=data, columns=columns)
-        else:
-            dataframe = pd.DataFrame()
-
-        return dataframe
 
     @property
     def jobcodes(self):
