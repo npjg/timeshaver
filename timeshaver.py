@@ -57,6 +57,7 @@ class TimeSaver:
         self._totals = None
         self._periods = None
         self._jobcodes = None
+        self._logoff_selector = None 
 
     def __del__(self):
         # Log off safely and delete the headless browser
@@ -83,6 +84,26 @@ class TimeSaver:
     def logoff(self):
         """Log out of TimeSaver."""
         self.driver.find_element_by_id("logoffLinkImage").click()
+
+    @property
+    def logoff_selector(self):
+        if self._logoff_selector is None:
+            self._logoff_selector = self.driver.find_element_by_id(
+            "FRMLogoffAfterTransactionTimestamp"
+        )
+
+        return self._logoff_selector
+
+    @property
+    def logoff_after_transaction(self):
+        """Says whether automatic logoff is enabled."""
+        return self.logoff_selector.get_property("checked")
+
+    @logoff_after_transaction.setter
+    def logoff_after_transaction(self, value):
+        "Sets the automatic logoff selector via a boolean."
+        if value ^ self.logoff_after_transaction:
+            self.logoff_selector.click()
 
     def punch(self):
         """Submit a new punch."""
