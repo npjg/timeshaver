@@ -152,7 +152,7 @@ or return an empty string if no approval status can be found."""
 
     @property
     def jobcodes(self):
-        "Describe all available job codes."
+        """Describe all available job codes."""
         if self._jobcodes is None:
             raw = self.driver.find_elements_by_xpath(
                 "//*[contains(@id, 'tr_FRMTimestampDeptPosCombo')]"
@@ -180,6 +180,20 @@ or return an empty string if no approval status can be found."""
                 self._jobcodes = pd.DataFrame()
 
         return self._jobcodes
+
+    @property
+    def jobcode(self):
+        """Return the currently selected jobcode."""
+        return self.driver.find_element_by_id(
+            "FRMTimestampDeptPos"
+        ).get_attribute("value")
+
+    @jobcode.setter
+    def jobcode(self, idx):
+        "Set a jobcode by index."
+        self.driver.execute_script(
+            "fireMultiColumnComboClick('FRMTimestampDeptPosCombo',{});".format(idx)
+        )
 
     @property
     def timetable(self):
