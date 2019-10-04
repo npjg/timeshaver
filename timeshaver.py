@@ -6,6 +6,7 @@ from dataclasses import dataclass
 import pandas as pd
 import numpy as np
 from enum import Enum
+import datetime as dt
 
 
 class AdpError(Exception):
@@ -83,6 +84,7 @@ class TimeSaver:
 
     def punch(self):
         """Submit a new punch."""
+        self.driver.find_element_by_id("anchorFolderTabs1").click()
         self.driver.find_element_by_id("bttAddPunch").click()
         self.driver.find_element_by_id("FloatMsgBtn0").click()
 
@@ -121,6 +123,7 @@ or return an empty string if no approval status can be found."""
     @property
     def sites(self):
         if self._sites is None:
+            self.driver.find_element_by_id("anchorFolderTabs1").click()
             self._sites = Select(self.driver.find_element_by_id("FRMTimestampSite"))
         return self._sites
 
@@ -174,6 +177,7 @@ or return an empty string if no approval status can be found."""
     @property
     def totals(self):
         """Return the total hours worked in the current period."""
+        self.driver.find_element_by_id("anchorFolderTabs2").click()
         if self._totals is None:
             totals = self.driver.find_element_by_xpath(
                 "//*[@id='TimeEntriesTotalTable']/tbody/tr[@id='trTotalWorked']"
