@@ -171,11 +171,36 @@ or return an empty string if no approval status can be found."""
         sites = Select(self.driver.find_element_by_id("FRMTimestampSite"))
         sites.select_by_index(idx)
 
+    def make_dataframe_from_html(self, table, row_xpath, header):
+        """Makes a pandas dataframe from a Selenium HTML object TABLE, with rows
+        referenced by ROW_XPATH and columns provided by a list in COLUMNS. If
+        TABLE is empty, return an empty DataFrame.
+        """
+
+        columns = [
+            column.get_attribute("textContent").strip() for column in header 
+        ]
+
+        if table:
+            data = np.array([
+                nonnull for nonnull in
+                [[atom.get_attribute("textContent").strip()
+                  for atom in row.find_elements_by_xpath(row_xpath)]
+                 for row in table]
+                if nonnull
+            ])
+
+            dataframe = pd.DataFrame(data=data, columns=columns)
+        else:
+            dataframe = pd.DataFrame()
+
+        return dataframe
+
     @property
     def jobcodes(self):
         """Describe all available job codes."""
         if self._jobcodes is None:
-            raw = self.driver.find_elements_by_xpath(
+            table = self.driver.find_elements_by_xpath(
                 "//*[contains(@id, 'tr_FRMTimestampDeptPosCombo')]"
             )
 
@@ -183,22 +208,7 @@ or return an empty string if no approval status can be found."""
                 "//*[@id='trMultiColumnTitles_FRMTimestampDeptPosCombo']/th/p"
             )
 
-            columns = [
-                column.get_attribute("textContent").strip()
-                for column in header
-            ]
-
-            if raw:
-                data = np.array([
-                    code for code in
-                    [[element.get_attribute("textContent").strip()
-                      for element in row.find_elements_by_xpath('td/p')]
-                     for row in raw]
-                    if code
-                ])
-                self._jobcodes = pd.DataFrame(data=data, columns=columns)
-            else:
-                self._jobcodes = pd.DataFrame()
+            self._jobcodes = self.make_dataframe_from_html(table, '/td/p', header)
 
         return self._jobcodes
 
@@ -220,7 +230,7 @@ or return an empty string if no approval status can be found."""
     def timetable(self):
         if self._timetable is None:
             self.driver.find_element_by_id("anchorFolderTabs2").click()
-            raw = self.driver.find_elements_by_xpath(
+            table = self.driver.find_elements_by_xpath(
                 "//*[contains(@id, 'TimeEntriesRepeater')]"
             )
 
@@ -228,22 +238,7 @@ or return an empty string if no approval status can be found."""
                 "//*[@id='TimeEntriesHeader']/tr/th"
             )
 
-            columns = [
-                column.text
-                for column in header
-            ]
-
-            if raw:
-                data = np.array([
-                    punch for punch in
-                      [[element.text
-                       for element in row.find_elements_by_xpath('td')]
-                    for row in raw]
-                     if punch
-                ])
-                self._timetable = pd.DataFrame(data=data, columns=columns)
-            else:
-                self._timetable = pd.DataFrame()
+            self._timetable = self.make_dataframe_from_html(table, 'td', header)
 
         return self._timetable
 
