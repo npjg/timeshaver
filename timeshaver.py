@@ -2,6 +2,7 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.support.select import Select
+from cached_property import cached_property
 from dataclasses import dataclass
 import pandas as pd
 import numpy as np
@@ -48,13 +49,6 @@ class TimeSaver:
         self.driver.get(self.base_url)
 
         self.credentials = None
-        self._sites = None
-        self._sites_selector = None
-        self._timetable = None
-        self._totals = None
-        self._periods = None
-        self._jobcodes = None
-        self._logoff_selector = None 
 
     def __del__(self):
         # Log off safely and delete the headless browser
@@ -111,14 +105,11 @@ class TimeSaver:
         """Log out of TimeSaver."""
         self.driver.find_element_by_id("logoffLinkImage").click()
 
-    @property
+    @cached_property
     def logoff_selector(self):
-        if self._logoff_selector is None:
-            self._logoff_selector = self.driver.find_element_by_id(
+        return self.driver.find_element_by_id(
             "FRMLogoffAfterTransactionTimestamp"
         )
-
-        return self._logoff_selector
 
     @property
     def logoff_after_transaction(self):
@@ -163,22 +154,16 @@ or return an empty string if no approval status can be found."""
         info = self.driver.find_element_by_id("spanTimePeriodApprovalStatus")
         return info.text
 
-    @property
+    @cached_property
     def sites_selector(self):
-        if self._sites_selector is None:
             # self.driver.find_element_by_id("anchorFolderTabs1").click()
-            self._sites_selector = Select(self.driver.find_element_by_id("FRMTimestampSite"))
+            return Select(self.driver.find_element_by_id("FRMTimestampSite"))
 
-        return self._sites_selector
-
-    @property
+    @cached_property
     def sites(self):
         """Describe all available work sites in an indexed list."""
-        if self._sites is None:
-            self._sites = [option.get_attribute("textContent")
-                           for option in self.sites_selector.options]
-
-        return self._sites
+        return [option.get_attribute("textContent")
+                for option in self.sites_selector.options]
 
     @property
     def site(self):
@@ -192,21 +177,18 @@ or return an empty string if no approval status can be found."""
         sites.select_by_index(idx)
 
 
-    @property
+    @cached_property
     def jobcodes(self):
         """Describe all available job codes."""
-        if self._jobcodes is None:
-            table = self.driver.find_elements_by_xpath(
-                "//*[contains(@id, 'tr_FRMTimestampDeptPosCombo')]"
-            )
+        table = self.driver.find_elements_by_xpath(
+            "//*[contains(@id, 'tr_FRMTimestampDeptPosCombo')]"
+        )
 
-            header = self.driver.find_elements_by_xpath(
-                "//*[@id='trMultiColumnTitles_FRMTimestampDeptPosCombo']/th/p"
-            )
+        header = self.driver.find_elements_by_xpath(
+            "//*[@id='trMultiColumnTitles_FRMTimestampDeptPosCombo']/th/p"
+        )
 
-            self._jobcodes = self.make_dataframe_from_html(table, '/td/p', header)
-
-        return self._jobcodes
+        return self.make_dataframe_from_html(table, '/td/p', header)
 
     @property
     def jobcode(self):
@@ -222,45 +204,37 @@ or return an empty string if no approval status can be found."""
             "fireMultiColumnComboClick('FRMTimestampDeptPosCombo',{});".format(idx)
         )
 
-    @property
+    @cached_property
     def timetable(self):
-        if self._timetable is None:
-            self.driver.find_element_by_id("anchorFolderTabs2").click()
-            table = self.driver.find_elements_by_xpath(
-                "//*[contains(@id, 'TimeEntriesRepeater')]"
-            )
+        self.driver.find_element_by_id("anchorFolderTabs2").click()
+        table = self.driver.find_elements_by_xpath(
+            "//*[contains(@id, 'TimeEntriesRepeater')]"
+        )
 
-            header = self.driver.find_elements_by_xpath(
-                "//*[@id='TimeEntriesHeader']/tr/th"
-            )
+        header = self.driver.find_elements_by_xpath(
+            "//*[@id='TimeEntriesHeader']/tr/th"
+        )
 
-            self._timetable = self.make_dataframe_from_html(table, 'td', header)
+        return self.make_dataframe_from_html(table, 'td', header)
 
-        return self._timetable
-
-    @property
+    @cached_property
     def totals(self):
         """Return the total hours worked in the current period."""
         self.driver.find_element_by_id("anchorFolderTabs2").click()
-        if self._totals is None:
-            totals = self.driver.find_element_by_xpath(
-                "//*[@id='TimeEntriesTotalTable']/tbody/tr[@id='trTotalWorked']"
-            )
+        totals = self.driver.find_element_by_xpath(
+            "//*[@id='TimeEntriesTotalTable']/tbody/tr[@id='trTotalWorked']"
+        )
 
-            self._totals = {
-                "totalHours": totals.find_element_by_xpath("td[2]/p/span").text,
-                "hourPayCodeTotal": totals.find_element_by_xpath("td[4]/p/span").text,
-                "dollarPayCodeTotal": totals.find_element_by_xpath("td[6]/p/span").text,
-                "projectTotal": totals.find_element_by_xpath("td[8]/p/span").text
-            }
+        return {
+            "totalHours": totals.find_element_by_xpath("td[2]/p/span").text,
+            "hourPayCodeTotal": totals.find_element_by_xpath("td[4]/p/span").text,
+            "dollarPayCodeTotal": totals.find_element_by_xpath("td[6]/p/span").text,
+            "projectTotal": totals.find_element_by_xpath("td[8]/p/span").text
+        }
 
-        return self._totals
-
-    @property
+    @cached_property
     def periods(self):
-        if self._periods is None:
-            self._periods = Select(self.driver.find_element_by_id("FRMTimePeriod"))
-        return self._periods
+        return Select(self.driver.find_element_by_id("FRMTimePeriod"))
 
     @property
     def period(self):
@@ -283,6 +257,6 @@ or return an empty string if no approval status can be found."""
             # We have a single element.
             self.periods.select_by_visible_text(args.value)
 
-        self._timetable = None
-
-    
+        # reset all properties that depend upon this
+        del self.timetable
+        del self.totals
