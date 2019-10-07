@@ -20,10 +20,6 @@ class AdpError(Exception):
         super().__init__(self.message)
 
 
-class AuthenticationError(AdpError):
-    """Exception raised when an unauthorized access attempt has been made."""
-    message = "The user attempted an unauthorized access to a resource."
-
 
 @dataclass
 class Credentials:
@@ -109,8 +105,6 @@ class TimeSaver:
         self.map_input(elements)
 
         self.driver.find_element_by_id("bttSubmit").click()
-        if not self.is_authenticated():
-            raise AuthenticationError
 
     def logoff(self):
         """Log out of TimeSaver."""
@@ -290,14 +284,4 @@ or return an empty string if no approval status can be found."""
 
         self._timetable = None
 
-    def is_authenticated(self):
-        """Check that we have successfully authenticated."""
-        try:
-            header = self.driver.find_elements_by_css_selector("ADPUI-HeaderTitle")
-        except:
-            raise AuthenticationError
-
-        raise NotImplementedError
-
     
-        
