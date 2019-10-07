@@ -19,8 +19,6 @@ class AdpError(Exception):
         self.message = message or self.message
         super().__init__(self.message)
 
-
-
 @dataclass
 class Credentials:
     uid: str
@@ -35,9 +33,10 @@ class Periods(Enum):
 
 
 class TimeSaver:
-    def __init__(self, version, key):
+    def __init__(self, version, key, headless=True):
         # Create a headless browser
         options = Options()
+        options.headless = headless
         self.driver = webdriver.Firefox(options=options)
         self.service = ["https://timesaver.adphc.com",
                         version,
@@ -45,7 +44,9 @@ class TimeSaver:
                         'TS',
                         'login.php']
 
+        self.driver.implicitly_wait(2)
         self.driver.get(self.base_url)
+
         self.credentials = None
         self._sites = None
         self._sites_selector = None
