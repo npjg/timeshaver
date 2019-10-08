@@ -2,6 +2,7 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.support.select import Select
+from cached_property import cached_property
 from dataclasses import dataclass
 import pandas as pd
 import numpy as np
@@ -19,12 +20,6 @@ class AdpError(Exception):
         self.message = message or self.message
         super().__init__(self.message)
 
-
-class AuthenticationError(AdpError):
-    """Exception raised when an unauthorized access attempt has been made."""
-    message = "The user attempted an unauthorized access to a resource."
-
-
 @dataclass
 class Credentials:
     uid: str
@@ -39,9 +34,10 @@ class Periods(Enum):
 
 
 class TimeSaver:
-    def __init__(self, version, key):
+    def __init__(self, version, key, headless=True):
         # Create a headless browser
         options = Options()
+        options.headless = headless
         self.driver = webdriver.Firefox(options=options)
         self.service = ["https://timesaver.adphc.com",
                         version,
@@ -49,15 +45,10 @@ class TimeSaver:
                         'TS',
                         'login.php']
 
+        self.driver.implicitly_wait(2)
         self.driver.get(self.base_url)
+
         self.credentials = None
-        self._sites = None
-        self._sites_selector = None
-        self._timetable = None
-        self._totals = None
-        self._periods = None
-        self._jobcodes = None
-        self._logoff_selector = None 
 
     def __del__(self):
         # Log off safely and delete the headless browser
@@ -67,6 +58,37 @@ class TimeSaver:
     @property
     def base_url(self):
         return  '/'.join(self.service)
+
+    def make_dataframe_from_html(self, table, row_xpath, header):
+        """Makes a pandas dataframe from a Selenium HTML object TABLE, with rows
+        referenced by ROW_XPATH and columns provided by a list in COLUMNS. If
+        TABLE is empty, return an empty DataFrame.
+        """
+
+        columns = [
+            column.get_attribute("textContent").strip() for column in header 
+        ]
+
+        if table:
+            data = np.array([
+                nonnull for nonnull in
+                [[atom.get_attribute("textContent").strip()
+                  for atom in row.find_elements_by_xpath(row_xpath)]
+                 for row in table]
+                if nonnull
+            ])
+
+            dataframe = pd.DataFrame(data=data, columns=columns)
+        else:
+            dataframe = pd.DataFrame()
+
+        return dataframe
+
+    def map_input(self, rules):
+        for rule in rules:
+            element = self.driver.find_element_by_id(rule[0])
+            element.clear()
+            element.send_keys(rule[1])
 
     def authenticate(self):
         """Login to TimeSaver with the provided credentials."""
@@ -78,21 +100,16 @@ class TimeSaver:
         self.map_input(elements)
 
         self.driver.find_element_by_id("bttSubmit").click()
-        if not self.is_authenticated():
-            raise AuthenticationError
 
     def logoff(self):
         """Log out of TimeSaver."""
         self.driver.find_element_by_id("logoffLinkImage").click()
 
-    @property
+    @cached_property
     def logoff_selector(self):
-        if self._logoff_selector is None:
-            self._logoff_selector = self.driver.find_element_by_id(
+        return self.driver.find_element_by_id(
             "FRMLogoffAfterTransactionTimestamp"
         )
-
-        return self._logoff_selector
 
     @property
     def logoff_after_transaction(self):
@@ -124,12 +141,6 @@ class TimeSaver:
         self.map_input(elements)
         self.driver.find_element_by_id("bttOk").click()
 
-    def map_input(self, rules):
-        for rule in rules:
-            element = self.driver.find_element_by_id(rule[0])
-            element.clear()
-            element.send_keys(rule[1])
-
     @property
     def last_login(self):
         """Get the last successgul login time."""
@@ -143,22 +154,16 @@ or return an empty string if no approval status can be found."""
         info = self.driver.find_element_by_id("spanTimePeriodApprovalStatus")
         return info.text
 
-    @property
+    @cached_property
     def sites_selector(self):
-        if self._sites_selector is None:
             # self.driver.find_element_by_id("anchorFolderTabs1").click()
-            self._sites_selector = Select(self.driver.find_element_by_id("FRMTimestampSite"))
+            return Select(self.driver.find_element_by_id("FRMTimestampSite"))
 
-        return self._sites_selector
-
-    @property
+    @cached_property
     def sites(self):
         """Describe all available work sites in an indexed list."""
-        if self._sites is None:
-            self._sites = [option.get_attribute("textContent")
-                           for option in self.sites_selector.options]
-
-        return self._sites
+        return [option.get_attribute("textContent")
+                for option in self.sites_selector.options]
 
     @property
     def site(self):
@@ -171,36 +176,19 @@ or return an empty string if no approval status can be found."""
         sites = Select(self.driver.find_element_by_id("FRMTimestampSite"))
         sites.select_by_index(idx)
 
-    @property
+
+    @cached_property
     def jobcodes(self):
         """Describe all available job codes."""
-        if self._jobcodes is None:
-            raw = self.driver.find_elements_by_xpath(
-                "//*[contains(@id, 'tr_FRMTimestampDeptPosCombo')]"
-            )
+        table = self.driver.find_elements_by_xpath(
+            "//*[contains(@id, 'tr_FRMTimestampDeptPosCombo')]"
+        )
 
-            header = self.driver.find_elements_by_xpath(
-                "//*[@id='trMultiColumnTitles_FRMTimestampDeptPosCombo']/th/p"
-            )
+        header = self.driver.find_elements_by_xpath(
+            "//*[@id='trMultiColumnTitles_FRMTimestampDeptPosCombo']/th/p"
+        )
 
-            columns = [
-                column.get_attribute("textContent").strip()
-                for column in header
-            ]
-
-            if raw:
-                data = np.array([
-                    code for code in
-                    [[element.get_attribute("textContent").strip()
-                      for element in row.find_elements_by_xpath('td/p')]
-                     for row in raw]
-                    if code
-                ])
-                self._jobcodes = pd.DataFrame(data=data, columns=columns)
-            else:
-                self._jobcodes = pd.DataFrame()
-
-        return self._jobcodes
+        return self.make_dataframe_from_html(table, '/td/p', header)
 
     @property
     def jobcode(self):
@@ -216,60 +204,37 @@ or return an empty string if no approval status can be found."""
             "fireMultiColumnComboClick('FRMTimestampDeptPosCombo',{});".format(idx)
         )
 
-    @property
+    @cached_property
     def timetable(self):
-        if self._timetable is None:
-            self.driver.find_element_by_id("anchorFolderTabs2").click()
-            raw = self.driver.find_elements_by_xpath(
-                "//*[contains(@id, 'TimeEntriesRepeater')]"
-            )
+        self.driver.find_element_by_id("anchorFolderTabs2").click()
+        table = self.driver.find_elements_by_xpath(
+            "//*[contains(@id, 'TimeEntriesRepeater')]"
+        )
 
-            header = self.driver.find_elements_by_xpath(
-                "//*[@id='TimeEntriesHeader']/tr/th"
-            )
+        header = self.driver.find_elements_by_xpath(
+            "//*[@id='TimeEntriesHeader']/tr/th"
+        )
 
-            columns = [
-                column.text
-                for column in header
-            ]
+        return self.make_dataframe_from_html(table, 'td', header)
 
-            if raw:
-                data = np.array([
-                    punch for punch in
-                      [[element.text
-                       for element in row.find_elements_by_xpath('td')]
-                    for row in raw]
-                     if punch
-                ])
-                self._timetable = pd.DataFrame(data=data, columns=columns)
-            else:
-                self._timetable = pd.DataFrame()
-
-        return self._timetable
-
-    @property
+    @cached_property
     def totals(self):
         """Return the total hours worked in the current period."""
         self.driver.find_element_by_id("anchorFolderTabs2").click()
-        if self._totals is None:
-            totals = self.driver.find_element_by_xpath(
-                "//*[@id='TimeEntriesTotalTable']/tbody/tr[@id='trTotalWorked']"
-            )
+        totals = self.driver.find_element_by_xpath(
+            "//*[@id='TimeEntriesTotalTable']/tbody/tr[@id='trTotalWorked']"
+        )
 
-            self._totals = {
-                "totalHours": totals.find_element_by_xpath("td[2]/p/span").text,
-                "hourPayCodeTotal": totals.find_element_by_xpath("td[4]/p/span").text,
-                "dollarPayCodeTotal": totals.find_element_by_xpath("td[6]/p/span").text,
-                "projectTotal": totals.find_element_by_xpath("td[8]/p/span").text
-            }
+        return {
+            "totalHours": totals.find_element_by_xpath("td[2]/p/span").text,
+            "hourPayCodeTotal": totals.find_element_by_xpath("td[4]/p/span").text,
+            "dollarPayCodeTotal": totals.find_element_by_xpath("td[6]/p/span").text,
+            "projectTotal": totals.find_element_by_xpath("td[8]/p/span").text
+        }
 
-        return self._totals
-
-    @property
+    @cached_property
     def periods(self):
-        if self._periods is None:
-            self._periods = Select(self.driver.find_element_by_id("FRMTimePeriod"))
-        return self._periods
+        return Select(self.driver.find_element_by_id("FRMTimePeriod"))
 
     @property
     def period(self):
@@ -292,16 +257,6 @@ or return an empty string if no approval status can be found."""
             # We have a single element.
             self.periods.select_by_visible_text(args.value)
 
-        self._timetable = None
-
-    def is_authenticated(self):
-        """Check that we have successfully authenticated."""
-        try:
-            header = self.driver.find_elements_by_css_selector("ADPUI-HeaderTitle")
-        except:
-            raise AuthenticationError
-
-        raise NotImplementedError
-
-    
-        
+        # reset all properties that depend upon this
+        del self.timetable
+        del self.totals
